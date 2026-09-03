@@ -1,0 +1,2 @@
+DATASET: mlg-ulb/creditcardfraud
+OUTPUT_DIR: data/raw
