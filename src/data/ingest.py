@@ -5,19 +5,8 @@ from dotenv import load_dotenv
 from kaggle.api.kaggle_api_extended import KaggleApi
 import pandas as pd
 import yaml
+from src.config.settings import Settings
 
-
-def load_config(config_path: str = "config.yaml"):
-    with open(config_path) as f:
-        config = yaml.safe_load(f)
-    return config
-
-
-def get_required_env(var_name: str) -> str:
-    value = os.getenv(var_name)
-    if not value:
-        raise ValueError(f"Environment variable '{var_name}' is missing")
-    return value
 
 def download_dataset(dataset : str, output_dir: Path):
     api = KaggleApi()
@@ -35,29 +24,20 @@ def load_data(cursor, csv_path: Path):
         )
 
 def main():
-    load_dotenv()
-    config = load_config()
-    kaggle_api_token = get_required_env("KAGGLE_API_TOKEN")
-    db_host = get_required_env("DB_HOST")
-    db_port = int(get_required_env("DB_PORT"))
-    db_user = get_required_env("DB_USER")
-    db_password = get_required_env("DB_PASSWORD")
-    db_name = get_required_env("DB_NAME")
+    settings = Settings.from_yaml()
     
-    dataset = config["DATASET"]
-    output_dir = config["OUTPUT_DIR"]
-    output_dir = Path(output_dir)
+    dataset = settings.dataset
+    output_dir = settings.output_dir
 
     output_dir.mkdir(parents=True, exist_ok=True)
-
     download_dataset(dataset, output_dir)
 
     conn = psycopg2.connect(
-        host=db_host,
-        port=db_port,
-        user=db_user,
-        password=db_password,
-        dbname=db_name
+        host=settings.env.db_host,
+        port=settings.env.db_port,
+        user=settings.env.db_user,
+        password=settings.env.db_password,
+        dbname=settings.env.db_name
     )
     try:
         cursor = conn.cursor()
