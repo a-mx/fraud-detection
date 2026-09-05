@@ -30,8 +30,8 @@ def main():
             max_iter=settings.models.baseline.max_iter,
             class_weight=settings.models.baseline.class_weight
         )
-        model = train_baseline(X_train, y_train)
-        metrics = evaluate_baseline(model, X_test, y_test)
+        model.train(X_train, y_train)
+        metrics = model.evaluate(X_test, y_test)
         print(f"Results: {metrics}")
     
     elif args.model == "mlp":
