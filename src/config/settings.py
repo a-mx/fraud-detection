@@ -21,9 +21,23 @@ class BaselineConfig:
     class_weight: str
 
 @dataclass(frozen=True)
+class XGBConfig:
+    n_estimators: int
+    max_depth: int
+    learning_rate: float
+    subsample: float
+    colsample_bytree: float
+    min_child_weight: int
+    reg_alpha: float
+    reg_lambda: float
+    n_jobs: int
+    random_state: int
+
+@dataclass(frozen=True)
 class ModelConfig:
     baseline: BaselineConfig
     mlp: MLPConfig
+    xgb: XGBConfig
 
 @dataclass(frozen=True)
 class TrainingConfig:
@@ -49,23 +63,39 @@ class Settings:
         models_cfg = raw.get("models", {})
         training_cfg = raw.get("training", {})
 
+        baseline_cfg = models_cfg.get("baseline", {})
+        mlp_cfg = models_cfg.get("mlp", {})
+        xgb_cfg = models_cfg.get("xgb", {})
+
         return cls(
             dataset=raw.get("DATASET", "mlg-ulb/creditcardfraud"),
             output_dir=Path(raw.get("OUTPUT_DIR", "data/raw")),
             models=ModelConfig(
                 baseline=BaselineConfig(
-                    max_iter=models_cfg.get("baseline", {}).get("max_iter", 1000),
-                    class_weight=models_cfg.get("baseline", {}).get("class_weight", "balanced"),
+                    max_iter=baseline_cfg.get("max_iter", 1000),
+                    class_weight=baseline_cfg.get("class_weight", "balanced"),
                 ),
                 mlp=MLPConfig(
-                    hidden_size=models_cfg.get("mlp", {}).get("hidden_size", 64),
-                    output_size=models_cfg.get("mlp", {}).get("output_size", 1),
-                    epochs=models_cfg.get("mlp", {}).get("epochs", 10),
-                    batch_size=models_cfg.get("mlp", {}).get("batch_size", 256),
-                    lr=models_cfg.get("mlp", {}).get("lr", 0.001),
-                    dropout=models_cfg.get("mlp", {}).get("dropout", 0.2),
-                    threshold=models_cfg.get("mlp", {}).get("threshold", 0.5)
+                    hidden_size=mlp_cfg.get("hidden_size", 64),
+                    output_size=mlp_cfg.get("output_size", 1),
+                    epochs=mlp_cfg.get("epochs", 10),
+                    batch_size=mlp_cfg.get("batch_size", 256),
+                    lr=mlp_cfg.get("lr", 0.001),
+                    dropout=mlp_cfg.get("dropout", 0.2),
+                    threshold=mlp_cfg.get("threshold", 0.5)
 
+                ),
+                xgb=XGBConfig(
+                    n_estimators=xgb_cfg.get("n_estimators", 100),
+                    max_depth=xgb_cfg.get("max_depth", 6),
+                    learning_rate=xgb_cfg.get("learning_rate", 0.1),
+                    subsample=xgb_cfg.get("subsample", 0.8),
+                    colsample_bytree=xgb_cfg.get("colsample_bytree", 0.8),
+                    min_child_weight=xgb_cfg.get("min_child_weight", 1),
+                    reg_alpha=xgb_cfg.get("reg_alpha", 0.0),
+                    reg_lambda=xgb_cfg.get("reg_lambda", 1.0),
+                    n_jobs=xgb_cfg.get("n_jobs", -1),
+                    random_state=xgb_cfg.get("random_state", 42),
                 ),
             ),
             training=TrainingConfig(
