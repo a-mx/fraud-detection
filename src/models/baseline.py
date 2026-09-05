@@ -2,11 +2,14 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 class BaselineModel:
-    def __init__(self, max_iter=1000, class_weight="balanced", **kwargs):
+    def __init__(self, params):
+
+        self.model_params = {
+            "max_iter": params.max_iter,
+            "class_weight": params.class_weight
+        }
         self.model = LogisticRegression(
-            max_iter=max_iter,
-            class_weight=class_weight,
-            **kwargs
+            **self.model_params
         )
     
     def train(self, X_train, y_train):

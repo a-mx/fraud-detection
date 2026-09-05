@@ -11,6 +11,25 @@ services:
     volumes:
       - ./sql:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    container_name: mlflow-dev
+    ports:
+      - "5000:5000"
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlflow/artifacts
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      --default-artifact-root /mlflow/artifacts
+    depends_on:
+      - db
+    volumes:
+      - mlflow_artifacts:/mlflow/artifacts
 
 volumes:
   postgres_data:
+  mlflow_artifacts:
