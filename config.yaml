@@ -1,2 +1,21 @@
 DATASET: mlg-ulb/creditcardfraud
 OUTPUT_DIR: data/raw
+
+models:
+  baseline:
+    max_iter: 1000
+    class_weight: balanced
+  
+  mlp:
+    threshold: 0.3
+    hidden_size: 64
+    output_size: 1
+    epochs: 5
+    batch_size: 256
+    lr: 0.001
+    dropout: 0.2
+
+training:
+  test_size: 0.2
+  random_state: 42
+  stratify: true
