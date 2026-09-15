@@ -1,6 +1,7 @@
 from xgboost import XGBClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
-
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 class XGBModel:
     def __init__(self, params, scale_pos_weight=None):
         self.model_params = {
@@ -22,6 +23,11 @@ class XGBModel:
         self.model = XGBClassifier(
             **self.model_params
         )
+
+        self.model = Pipeline([
+            ("scaler", StandardScaler()),
+            ("clf", self.model)
+        ])
 
     def train(self, X_train, y_train):
         self.model.fit(X_train, y_train)

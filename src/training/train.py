@@ -1,6 +1,7 @@
 import torch
 import numpy as np
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+
 class Trainer:
         def __init__(
                         self, 
@@ -52,6 +53,7 @@ class Trainer:
                 prec = precision_score(all_targets, y_pred_binary, zero_division=0)
                 recall = recall_score(all_targets, y_pred_binary, zero_division=0)
                 f1 = f1_score(all_targets, y_pred_binary, zero_division=0)
+                roc_auc = roc_auc_score(all_targets, y_pred_binary)
                 
                 print(f"\nTest Results:")
                 print(f"Loss: {avg_loss:>7f}")
@@ -59,13 +61,15 @@ class Trainer:
                 print(f"Precision: {prec:>7f}")
                 print(f"Recall: {recall:>7f}")
                 print(f"F1: {f1:>7f}")
+                print(f"ROC-AUC: {roc_auc:>7f}")
                 
                 return {
                         "loss": avg_loss,
                         "accuracy": acc,
                         "precision": prec,
                         "recall": recall,
-                        "f1": f1
+                        "f1": f1,
+                        "roc_auc": roc_auc
                 }
 
 

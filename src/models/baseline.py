@@ -1,4 +1,6 @@
 from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 class BaselineModel:
@@ -8,9 +10,15 @@ class BaselineModel:
             "max_iter": params.max_iter,
             "class_weight": params.class_weight
         }
+
         self.model = LogisticRegression(
             **self.model_params
         )
+
+        self.model = Pipeline([
+            ("scaler", StandardScaler()),
+            ("clf", self.model)
+        ])
     
     def train(self, X_train, y_train):
         self.model.fit(X_train, y_train)
