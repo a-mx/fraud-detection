@@ -1,7 +1,7 @@
 import logging
 import os
 from contextlib import asynccontextmanager
-
+import numpy as np
 import mlflow
 import mlflow.pyfunc
 import pandas as pd
@@ -64,29 +64,7 @@ def health():
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(req: PredictRequest, model=Depends(get_loaded_model)):
-    try:
-        df = pd.DataFrame([req.features])
-
-        score = None
-        try:
-            proba = model.predict(df, params={"predict_method": "predict_proba"})
-            if hasattr(proba, "shape") and proba.ndim == 2:
-                score = float(proba[0][1]) 
-        except Exception:
-            raw = model.predict(df)
-            value = raw[0]
-            if hasattr(value, "item"):
-                value = value.item()
-            score = float(value) if isinstance(value, (int, float)) else None
-
-        if score is not None:
-            prediction = int(score >= 0.5)
-        else:
-            prediction = int(model.predict(df)[0])
-
-        return PredictResponse(prediction=prediction, score=score)
-
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Prediction failed: {exc}") from exc
+    df = pd.DataFrame([req.features])
+    raw = np.asarray(model.predict(df)).ravel()
+    score = float(raw[0])
+    return PredictResponse(prediction=int(score >= 0.5), score=score)

@@ -40,8 +40,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      MLFLOW_TRACKING_URI: http://mlflow:5000
-      MLFLOW_MODEL_URI: models:/fraud-detection@production
+      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
+      MLFLOW_MODEL_URI: ${MLFLOW_MODEL_URI}
+      RELOAD_TOKEN: ${RELOAD_TOKEN}
     depends_on:
       - mlflow
     command: uvicorn src.api.app:app --host 0.0.0.0 --port 8000
