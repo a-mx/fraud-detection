@@ -1,42 +1,25 @@
 import logging
-import os
 from contextlib import asynccontextmanager
-import numpy as np
-import mlflow
-import mlflow.pyfunc
-import pandas as pd
-from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel, ConfigDict, Field
 
+from fastapi import FastAPI
+
+from src.config.settings import Settings
+from src.api.model import load_model
+from src.api.routes import reload as reload_route, health, predict
+settings = Settings.from_yaml()
 logger = logging.getLogger(__name__)
-
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
-MLFLOW_MODEL_URI = os.getenv("MLFLOW_MODEL_URI", "models:/fraud-detection@production")
-
-class PredictRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    features: dict[str, float] = Field(min_length=1)
-
-class PredictResponse(BaseModel):
-    prediction: int
-    score: float | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     app.state.model = None
-    app.state.model_uri = MLFLOW_MODEL_URI
+    app.state.model_uri = settings.env.mlflow_model_uri
 
     try:
-        app.state.model = mlflow.pyfunc.load_model(
-            MLFLOW_MODEL_URI,
-        )
-        logger.info("Loaded model from %s", MLFLOW_MODEL_URI)
+        app.state.model = load_model()
+        logger.info("Loaded model from %s", settings.env.mlflow_model_uri)
     except Exception:
-        logger.exception(
-            "Model not found"
-        )
+        logger.exception("Model not found")
 
     yield
 
@@ -44,27 +27,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-
-
-def get_loaded_model():
-    model = getattr(app.state, "model", None)
-    if model is None:
-        raise HTTPException(status_code=503, detail="Model is not loaded")
-    return model
-
-
-@app.get("/health")
-def health():
-    return {
-        "status": "ok",
-        "model_loaded": getattr(app.state, "model", None) is not None,
-        "model_uri": getattr(app.state, "model_uri", None),
-    }
-
-
-@app.post("/predict", response_model=PredictResponse)
-def predict(req: PredictRequest, model=Depends(get_loaded_model)):
-    df = pd.DataFrame([req.features])
-    raw = np.asarray(model.predict(df)).ravel()
-    score = float(raw[0])
-    return PredictResponse(prediction=int(score >= 0.5), score=score)
+app.include_router(health.router)
+app.include_router(predict.router)
+app.include_router(reload_route.router)

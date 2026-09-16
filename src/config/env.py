@@ -9,6 +9,10 @@ class EnvConfig:
     db_user: str
     db_password: str
     db_name: str
+    mlflow_tracking_uri: str
+    mlflow_model_uri: str
+    reload_token: str
+    
 
     @classmethod
     def from_env(cls) -> "EnvConfig":
@@ -26,6 +30,9 @@ class EnvConfig:
             db_user=required("DB_USER"),
             db_password=required("DB_PASSWORD"),
             db_name=required("DB_NAME"),
+            mlflow_tracking_uri=required("MLFLOW_TRACKING_URI"),
+            mlflow_model_uri=required("MLFLOW_MODEL_URI"),
+            reload_token=required("RELOAD_TOKEN"),
         )
     
 if __name__ == "__main__":
