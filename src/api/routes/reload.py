@@ -8,7 +8,7 @@ from src.api.model import reload_model_into
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["admin"])
+router = APIRouter(tags=["reload"])
 
 
 @router.post(

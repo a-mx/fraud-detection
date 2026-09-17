@@ -34,10 +34,23 @@ class XGBConfig:
     random_state: int
 
 @dataclass(frozen=True)
+class RandomForestConfig:
+    n_estimators: int
+    max_depth: int
+    min_samples_split: int
+    min_samples_leaf: int
+    max_features: str
+    class_weight: str
+    n_jobs: int
+    random_state: int
+
+
+@dataclass(frozen=True)
 class ModelConfig:
     baseline: BaselineConfig
     mlp: MLPConfig
     xgb: XGBConfig
+    random_forest: RandomForestConfig
 
 @dataclass(frozen=True)
 class TrainingConfig:
@@ -66,6 +79,7 @@ class Settings:
         baseline_cfg = models_cfg.get("baseline", {})
         mlp_cfg = models_cfg.get("mlp", {})
         xgb_cfg = models_cfg.get("xgb", {})
+        rf_cfg = models_cfg.get("random_forest",{})
 
         return cls(
             dataset=raw.get("DATASET", "mlg-ulb/creditcardfraud"),
@@ -97,6 +111,17 @@ class Settings:
                     n_jobs=xgb_cfg.get("n_jobs", -1),
                     random_state=xgb_cfg.get("random_state", 42),
                 ),
+
+                random_forest=RandomForestConfig(
+                    n_estimators=rf_cfg.get("n_estimators", 100),
+                    max_depth=rf_cfg.get("max_depth", 6),
+                    min_samples_split=rf_cfg.get("min_samples_split", 5),
+                    min_samples_leaf=rf_cfg.get("min_samples_leaf", 28),
+                    max_features=rf_cfg.get("max_features", "sqrt"),
+                    class_weight=rf_cfg.get("class_weight", "balanced"),
+                    n_jobs=rf_cfg.get("n_jobs", -1),
+                    random_state=rf_cfg.get("random_state", 42),
+                )
             ),
             training=TrainingConfig(
                 test_size=training_cfg.get("test_size", 0.2),

@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from src.config.settings import Settings
 from src.api.model import load_model
-from src.api.routes import reload as reload_route, health, predict
+from src.api.routes import reload as reload, health, predict
 settings = Settings.from_yaml()
 logger = logging.getLogger(__name__)
 
@@ -29,4 +29,4 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(health.router)
 app.include_router(predict.router)
-app.include_router(reload_route.router)
+app.include_router(reload.router)
