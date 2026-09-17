@@ -26,8 +26,8 @@ def load_data(cursor, csv_path: Path):
 def main():
     settings = Settings.from_yaml()
     
-    dataset = settings.dataset
-    output_dir = settings.output_dir
+    dataset = settings.dataset.name
+    output_dir = settings.dataset.output_dir
 
     output_dir.mkdir(parents=True, exist_ok=True)
     download_dataset(dataset, output_dir)

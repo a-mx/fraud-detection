@@ -18,7 +18,7 @@ help:
 	@echo ""
 	@echo "  make ingest     		- ingest dataset"
 	@echo ""
-	@echo "  make train MODEL=xgb   - train a model (baseline|xgb|mlp)"
+	@echo "  make train MODEL=xgb   - train a model (baseline|xgb|mlp|random_forest)"
 	@echo "  make promote MODEL=xgb - train and promote to production"
 	@echo "  make reload            - reload model in API"
 	@echo ""

@@ -26,7 +26,7 @@ class Trainer:
                                 loss, current = loss.item(), idx * len(X_batch) + len(X_batch)
                                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
-        def test_loop(self, dataloader, model):
+        def test_loop(self, dataloader, model, threshold):
                 model.eval()
                 num_batches = len(dataloader)
                 total_loss = 0.0
@@ -47,7 +47,7 @@ class Trainer:
                 all_preds = np.concatenate(all_preds).flatten()
                 all_targets = np.concatenate(all_targets).flatten()
                 
-                y_pred_binary = (all_preds >= model.threshold).astype(int)
+                y_pred_binary = (all_preds >= threshold).astype(int)
                 
                 acc = accuracy_score(all_targets, y_pred_binary)
                 prec = precision_score(all_targets, y_pred_binary, zero_division=0)
