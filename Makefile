@@ -7,24 +7,28 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
-.PHONY: help up down build logs ingest reload predict health train promote deploy
+.PHONY: help up down build logs ingest reload predict health train promote deploy fs test test-cov test-file
 
 help:
 	@echo "Available commands:"
-	@echo "  make up                - start the full stack"
-	@echo "  make down              - stop the stack"
-	@echo "  make build             - rebuild images"
-	@echo "  make logs              - tail API logs"
+	@echo "  make up                				- start the full stack"
+	@echo "  make down              				- stop the stack"
+	@echo "  make build             				- rebuild images"
+	@echo "  make logs              				- tail API logs"
 	@echo ""
-	@echo "  make ingest     		- ingest dataset"
+	@echo "  make ingest     						- ingest dataset"
 	@echo ""
-	@echo "  make train MODEL=xgb   - train a model (baseline|xgb|mlp|random_forest)"
-	@echo "  make promote MODEL=xgb - train and promote to production"
-	@echo "  make fs     			- feature selection (baseline)"
-	@echo "  make reload            - reload model in API"
+	@echo "  make train MODEL=xgb   				- train a model (baseline|xgb|mlp|random_forest)"
+	@echo "  make promote MODEL=xgb 				- train and promote to production"
+	@echo "  make fs     							- feature selection (baseline)"
+	@echo "  make reload            				- reload model in API"
 	@echo ""
-	@echo "  make health            - check API status"
-	@echo "  make predict           - send a test request"
+	@echo "  make health            				- check API status"
+	@echo "  make predict           				- send a test request"
+	@echo ""
+	@echo "  make test              				- run all tests"
+	@echo "  make test-cov               			- run tests with coverage report"
+	@echo "  make test-file FILE=tests/test_api.py  - run one file"
 
 up:
 	docker compose up -d
@@ -65,6 +69,22 @@ predict:
 	@curl -fsS -X POST $(API_URL)/predict \
 		-H "Content-Type: application/json" \
 		-d @test_payload.json | python -m json.tool
+
+test:
+	pytest $(TEST_PATH) -v
+
+test-cov:
+	pytest $(TEST_PATH) -v \
+		--cov=src \
+		--cov-report=term-missing \
+		--cov-report=html:htmlcov
+
+test-file:
+	@if [ -z "$(FILE)" ]; then \
+		echo "Error: enter FILE"; \
+		exit 1; \
+	fi
+	pytest $(FILE) -v
 
 deploy:
 	$(MAKE) promote MODEL=$(MODEL)
