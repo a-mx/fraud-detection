@@ -20,6 +20,7 @@ help:
 	@echo ""
 	@echo "  make train MODEL=xgb   - train a model (baseline|xgb|mlp|random_forest)"
 	@echo "  make promote MODEL=xgb - train and promote to production"
+	@echo "  make fs     			- feature selection (baseline)"
 	@echo "  make reload            - reload model in API"
 	@echo ""
 	@echo "  make health            - check API status"
@@ -42,6 +43,9 @@ logs:
 
 train:
 	python -m src.main --model $(MODEL)
+
+fs:
+	python -m src.select_features
 
 promote:
 	python -m src.main --model $(MODEL) --promote

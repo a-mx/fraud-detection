@@ -9,6 +9,16 @@ training:
   cv_folds: 5
   scoring: pr_auc
 
+feature_selection:
+  enabled: true
+  method: greedy_forward
+  output: data/selected_features.json
+  cv_folds: 3
+  scoring: pr_auc
+  max_features: 20
+  min_improvement: 1.0e-4
+  
+
 tuning:
   n_trials: 30
   timeout: 600

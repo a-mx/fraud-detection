@@ -5,3 +5,4 @@ __pycache__
 test.sh
 mlflow.db
 co.md
+models

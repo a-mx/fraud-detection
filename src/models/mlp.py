@@ -13,6 +13,8 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 from sklearn.preprocessing import StandardScaler
+from src.training.pytorch.dataloader import make_loaders
+from src.training.pytorch.train import Trainer
 
 
 class MLP(nn.Module):
@@ -99,9 +101,6 @@ class MLPModel:
         raise ValueError(f"Unknown optimizer: {self.optimizer_name}")
 
     def train(self, X_train, y_train, log_metrics_callback=None) -> "MLPModel":
-        from src.training.pytorch.dataloader import make_loaders
-        from src.training.pytorch.train import Trainer
-
         train_loader, _, self.scaler = make_loaders(
             X_train,
             X_train,

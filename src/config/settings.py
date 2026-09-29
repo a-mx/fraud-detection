@@ -29,6 +29,16 @@ class ModelSpec:
     fixed: dict[str, Any] = field(default_factory=dict)
     search: dict[str, Any] = field(default_factory=dict)
 
+@dataclass(frozen=True)
+class FeatureSelectionConfig:
+    enabled: bool = True
+    method: str = "greedy_forward"
+    output: str = "data/selected_features.json"
+    cv_folds: int = 3
+    scoring: str = "pr_auc"
+    max_features: int | None = None
+    min_improvement: float = 1e-4
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -37,6 +47,7 @@ class Settings:
     training: TrainingConfig
     tuning: TuningConfig
     models: dict[str, ModelSpec]
+    feature_selection: FeatureSelectionConfig
     env: EnvConfig
 
     @classmethod
@@ -48,6 +59,7 @@ class Settings:
         ds = raw.get("dataset", {})
         tr = raw.get("training", {})
         tu = raw.get("tuning", {})
+        fs = raw.get("feature_selection", {})
 
         models = {
             name: ModelSpec(
@@ -62,6 +74,7 @@ class Settings:
             output_dir=Path(ds.get("output_dir", "data/raw")),
             training=TrainingConfig(**tr),
             tuning=TuningConfig(**tu),
+            feature_selection = FeatureSelectionConfig(**fs),
             models=models,
             env=EnvConfig.from_env(),
         )
