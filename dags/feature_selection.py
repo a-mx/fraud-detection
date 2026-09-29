@@ -1,11 +1,13 @@
 from airflow import DAG
-from airflow.operators.bash import BashOperator
-from airflow.sdk import Asset
+from airflow.providers.docker.operators.docker import DockerOperator
 
-from common import DATA_DIR, DEFAULT_ARGS, START_DATE, WORKDIR
-
-RAW_DATA = Asset(f"file://{DATA_DIR}/raw/creditcard.csv")
-SELECTED_FEATURES = Asset(f"file://{DATA_DIR}/selected_features.json")
+from common import (
+    COMMON_DOCKER_KWARGS,
+    DEFAULT_ARGS,
+    RAW_DATA,
+    SELECTED_FEATURES,
+    START_DATE,
+)
 
 
 with DAG(
@@ -18,23 +20,17 @@ with DAG(
     tags=["features", "selection"],
 ) as dag:
 
-    select_baseline = BashOperator(
-        task_id="greedy_selection_baseline",
-        bash_command=(
-            f"cd {WORKDIR} && "
-            f"python -m src.select_features "
-            f"  --model baseline "
-            f"  --scoring pr_auc "
-            f"  --cv-folds 3 "
-            f"  --max-features 20 "
-            f"  --output {DATA_DIR}/selected_features.json"
-        ),
+    select = DockerOperator(
+        task_id="greedy_selection",
+        command="python -m src.select_features",
+        **COMMON_DOCKER_KWARGS,
     )
 
-    publish = BashOperator(
+    publish = DockerOperator(
         task_id="publish_features",
-        bash_command="echo 'Feature selection done'",
+        command="echo 'Feature selection done'",
         outlets=[SELECTED_FEATURES],
+        **COMMON_DOCKER_KWARGS,
     )
 
-    select_baseline >> publish
+    select >> publish

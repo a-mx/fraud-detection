@@ -1,34 +1,38 @@
 from airflow import DAG
-from airflow.operators.bash import BashOperator
-from airflow.operators.python import BranchPythonOperator, PythonOperator
+from airflow.operators.python import BranchPythonOperator
+from airflow.providers.docker.operators.docker import DockerOperator
 
 from common import (
-    CANDIDATE_MODELS, DATA_DIR, DEFAULT_ARGS, MIN_PR_AUC, MIN_RECALL,
-    START_DATE, WORKDIR,
+    COMMON_DOCKER_KWARGS,
+    DEFAULT_ARGS,
+    MIN_PR_AUC,
+    MIN_RECALL,
+    START_DATE,
 )
+
+CANDIDATE_MODELS = ["baseline", "xgb", "mlp", "bagging_xgb"]
 
 
 def _pick_best_model(**context):
-    """Czyta metryki z MLflow i zwraca nazwę najlepszego modelu, o ile spełnia progi."""
-    import mlflow
     from mlflow.tracking import MlflowClient
 
     client = MlflowClient()
     experiment = client.get_experiment_by_name("fraud-detection")
     if experiment is None:
-        raise ValueError("Experiment 'fraud-detection' not found")
+        return "skip_promotion"
+
     runs = client.search_runs(
         experiment_ids=[experiment.experiment_id],
         order_by=["attributes.start_time DESC"],
         max_results=200,
     )
 
-    best = {"model": None, "pr_auc": 0.0, "recall": 0.0, "run_id": None}
+    best = {"model": None, "pr_auc": 0.0, "recall": 0.0}
     seen = set()
 
     for run in runs:
         model = run.data.params.get("model")
-        if model in seen or model not in CANDIDATE_MODELS:
+        if not model or model in seen or model not in CANDIDATE_MODELS:
             continue
         seen.add(model)
 
@@ -36,20 +40,18 @@ def _pick_best_model(**context):
         recall = run.data.metrics.get("recall", 0.0)
 
         if pr_auc > best["pr_auc"]:
-            best = {
-                "model": model,
-                "pr_auc": pr_auc,
-                "recall": recall,
-                "run_id": run.info.run_id,
-            }
+            best = {"model": model, "pr_auc": pr_auc, "recall": recall}
 
-    print(f"Best candidate: {best}")
+    if best["model"] is None:
+        return "skip_promotion"
 
     if best["pr_auc"] < MIN_PR_AUC or best["recall"] < MIN_RECALL:
+        print(f"Best {best['model']} below thresholds: {best}")
         return "skip_promotion"
 
     context["ti"].xcom_push(key="best_model", value=best["model"])
     context["ti"].xcom_push(key="pr_auc", value=best["pr_auc"])
+    print(f"Best: {best}")
     return "promote_best"
 
 
@@ -68,36 +70,31 @@ with DAG(
         python_callable=_pick_best_model,
     )
 
-    promote = BashOperator(
+    promote = DockerOperator(
         task_id="promote_best",
-        bash_command=(
-            f"cd {WORKDIR} && "
-            f'python -m src.main --model {{{{ ti.xcom_pull(task_ids="pick_best_model", key="best_model") }}}} '
-            f"  --promote"
+        command=(
+            'python -m src.main '
+            '--model {{ ti.xcom_pull(task_ids="pick_best_model", key="best_model") }} '
+            '--promote'
         ),
+        **COMMON_DOCKER_KWARGS,
     )
 
-    reload_api = BashOperator(
+    reload_api = DockerOperator(
         task_id="reload_api",
-        bash_command=(
-            'curl -fsS -X POST http://api:8000/reload '
-            '-H "X-Reload-Token: {{ var.value.reload_token }}"'
+        command=(
+            'bash -c "curl -fsS -X POST http://api:8000/reload '
+            '-H \\"X-Reload-Token: $RELOAD_TOKEN\\""'
         ),
+        **COMMON_DOCKER_KWARGS,
     )
 
-    notify = BashOperator(
-        task_id="notify_success",
-        bash_command=(
-            'echo "Promoted {{ ti.xcom_pull(task_ids=\'pick_best_model\', key=\'best_model\') }}" '
-            '"with PR-AUC={{ ti.xcom_pull(task_ids=\'pick_best_model\', key=\'pr_auc\') }}"'
-        ),
-    )
-
-    skip = BashOperator(
+    skip = DockerOperator(
         task_id="skip_promotion",
-        bash_command='echo "No candidate met quality thresholds — skipping"',
+        command="echo 'No candidate met quality thresholds — skipping'",
         trigger_rule="none_failed_min_one_success",
+        **COMMON_DOCKER_KWARGS,
     )
 
     pick >> [promote, skip]
-    promote >> reload_api >> notify
+    promote >> reload_api
